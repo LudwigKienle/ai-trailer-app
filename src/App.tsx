@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { 
   Upload, 
   Download, 
@@ -17,16 +17,163 @@ import {
   Camera,
   Film,
   Layers,
-  BookOpen,
   Info
 } from 'lucide-react';
 
+// Type definitions
+interface Character {
+  name: string;
+  fullName: string;
+  role: string;
+  age: string;
+  description: string;
+  appearance?: string;
+  traits: string[];
+  style: string;
+  want?: string;
+  need?: string;
+  wound?: string;
+  lie?: string;
+}
+
+interface Environment {
+  name: string;
+  fullLocation: string;
+  description: string;
+  timeOfDay: string;
+  locationType: string;
+  visualElements: string[];
+  mood: string;
+  colorPalette: string;
+}
+
+interface Shot {
+  number: number;
+  location: string;
+  shotType: string;
+  description: string;
+  voiceover?: string;
+  emotion: string;
+  characters: string[];
+  timeOfDay: string;
+  isDialogue: boolean;
+}
+
+interface CharacterPrompt {
+  character: string;
+  role: string;
+  midjourneyPrompt: string;
+  personalizedTags: string;
+  characterDetails: {
+    want: string;
+    need: string;
+    wound: string;
+    lie: string;
+  };
+  subgenreSpecific: {
+    outfits: string[];
+    expressions: string[];
+    poses: string[];
+  };
+  variations: string[];
+}
+
+interface EnvironmentPrompt {
+  environment: string;
+  midjourneyPrompt: string;
+  personalizedTags: string;
+  subgenreElements: string[];
+  variations: string[];
+}
+
+interface ShotPrompt {
+  shotNumber: number;
+  description: string;
+  runwayPrompt: string;
+  shotType: string;
+  emotion: string;
+  characters: string[];
+  location: string;
+  timeOfDay: string;
+  isDialogue: boolean;
+  voiceover?: string;
+  subgenreStyle: string;
+  technicalNotes: string;
+}
+
+interface VideoPrompt {
+  shotNumber: number;
+  description: string;
+  klingPrompt: string;
+  veoPrompt: string;
+  characters: string[];
+  emotion: string;
+  shotType: string;
+  isDialogue: boolean;
+  voiceover?: string;
+  presets: string[];
+  duration: string;
+  subgenreNotes: string;
+}
+
+interface RunwayReference {
+  type: 'character' | 'environment';
+  name: string;
+  tag: string;
+  extraOutfits?: string[];
+  expressions?: string[];
+  subgenreStyle?: string;
+  variations?: string[];
+  subgenreElements?: string[];
+}
+
+interface FolderStructure {
+  mainFolder: string;
+  structure: string[];
+}
+
+interface NotionTemplate {
+  title: string;
+  properties: Record<string, string | boolean>;
+  sections: Array<{
+    title: string;
+    content: string;
+  }>;
+}
+
+interface GeneratedContent {
+  characterPrompts: CharacterPrompt[];
+  environmentPrompts: EnvironmentPrompt[];
+  shotPrompts: ShotPrompt[];
+  videoPrompts: VideoPrompt[];
+  runwayReferences: RunwayReference[];
+  folderStructure: FolderStructure | null;
+  notionTemplate: NotionTemplate | null;
+}
+
+interface Subgenre {
+  id: string;
+  name: string;
+  description: string;
+  visualStyle: string;
+  colorPalette: string;
+  lightingStyle: string;
+}
+
+interface Phase {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactElement;
+  tool: string;
+}
+
 const AITrailerAutomationPro = () => {
-  const [script, setScript] = useState('');
-  const [storyBible, setStoryBible] = useState('');
-  const [projectName, setProjectName] = useState('');
-  const [selectedSubgenre, setSelectedSubgenre] = useState('contemporary');
-  const [generatedContent, setGeneratedContent] = useState({
+  const [script, setScript] = useState<string>('');
+  const [storyBible, setStoryBible] = useState<string>('');
+  const [projectName, setProjectName] = useState<string>('');
+  const [selectedSubgenre, setSelectedSubgenre] = useState<string>('contemporary');
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent>({
     characterPrompts: [],
     environmentPrompts: [],
     shotPrompts: [],
@@ -35,12 +182,12 @@ const AITrailerAutomationPro = () => {
     folderStructure: null,
     notionTemplate: null
   });
-  const [selectedPhase, setSelectedPhase] = useState('project_setup');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [copiedIndex, setCopiedIndex] = useState(-1);
-  const fileInputRef = useRef(null);
+  const [selectedPhase, setSelectedPhase] = useState<string>('project_setup');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [copiedIndex, setCopiedIndex] = useState<number>(-1);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const subgenres = [
+  const subgenres: Subgenre[] = [
     {
       id: 'contemporary',
       name: 'Contemporary Romance',
@@ -91,7 +238,7 @@ const AITrailerAutomationPro = () => {
     }
   ];
 
-  const phases = [
+  const phases: Phase[] = [
     {
       id: 'project_setup',
       name: 'Project Setup',
@@ -141,6 +288,8 @@ const AITrailerAutomationPro = () => {
     
     setTimeout(() => {
       const subgenreStyle = subgenres.find(s => s.id === selectedSubgenre);
+      if (!subgenreStyle) return;
+      
       const characters = extractCharacters(script + ' ' + storyBible);
       const environments = extractEnvironments(script + ' ' + storyBible, subgenreStyle);
       const shots = extractShots(script);
@@ -161,8 +310,8 @@ const AITrailerAutomationPro = () => {
     }, 3000);
   };
 
-  const extractCharacters = (text) => {
-    const characters = [];
+  const extractCharacters = (text: string): Character[] => {
+    const characters: Character[] = [];
     
     // Try multiple formats for CHARACTER section
     const characterSection = text.match(/(?:# \*\*CHARACTERS:\*\*|Characters:|CHARACTERS:)(.*?)(?=# \*\*|Plot Beats|PLOT BEATS|Story Beats|STORY BEATS|SHOTLIST|SHOT LIST|$)/si);
@@ -171,16 +320,20 @@ const AITrailerAutomationPro = () => {
       const charText = characterSection[1];
       
       // Format 1: ## **Role (Name) - Age**
-      let charMatches = charText.match(/## \*\*([^*]+)\*\*(.*?)(?=## \*\*|$)/gs);
+      const charMatches = charText.match(/## \*\*([^*]+)\*\*(.*?)(?=## \*\*|$)/gs);
       
       // Format 2: Role (Name) - Age (without markdown)
       if (!charMatches || charMatches.length === 0) {
         // Split by lines and look for character headers
         const lines = charText.split('\n');
-        let currentChar = null;
-        let currentContent = [];
+        let currentChar: {
+          role: string;
+          name: string;
+          age: string;
+        } | null = null;
+        let currentContent: string[] = [];
         
-        lines.forEach((line, index) => {
+        lines.forEach((line) => {
           // Check if line is a character header (contains parentheses and dash with age)
           const charHeaderMatch = line.match(/^([^(]*?)\s*\(([^)]+)\)\s*-\s*(\d+)|^([^-]+)\s*-\s*(\d+)|^\* ([^:]+):/);
           
@@ -208,11 +361,13 @@ const AITrailerAutomationPro = () => {
             } else if (charHeaderMatch[6]) {
               // Format: * Name (age):
               const nameAge = charHeaderMatch[6].match(/([^(]+)(?:\s*\((\d+)\))?/);
-              currentChar = {
-                role: '',
-                name: nameAge[1].trim(),
-                age: nameAge[2] || ''
-              };
+              if (nameAge) {
+                currentChar = {
+                  role: '',
+                  name: nameAge[1].trim(),
+                  age: nameAge[2] || ''
+                };
+              }
             }
             currentContent = [];
           } else if (currentChar) {
@@ -269,8 +424,8 @@ const AITrailerAutomationPro = () => {
       
       [...foundNames].slice(0, 6).forEach(name => {
         characters.push({
-          name: name,
-          fullName: name,
+          name: String(name),
+          fullName: String(name),
           description: `Character ${name} from the story`,
           age: '25-35',
           traits: ['attractive', 'charismatic'],
@@ -283,7 +438,11 @@ const AITrailerAutomationPro = () => {
     return characters.slice(0, 8);
   };
   
-  const processCharacterData = (charData, content) => {
+  const processCharacterData = (charData: {
+    role: string;
+    name: string;
+    age: string;
+  }, content: string): Character => {
     // Extract Want/Need/Wound/Lie with tab-based format
     const wantMatch = content.match(/Want\s*\n?\s*\t?(.*?)(?=Need|Wound|Lie|$)/si);
     const needMatch = content.match(/Need\s*\n?\s*\t?(.*?)(?=Want|Wound|Lie|$)/si);
@@ -346,7 +505,7 @@ const AITrailerAutomationPro = () => {
     };
   };
 
-  const extractTimeFromLocation = (location) => {
+  const extractTimeFromLocation = (location: string): string => {
     const timeKeywords = {
       'DAY': 'day',
       'NIGHT': 'night',
@@ -367,8 +526,8 @@ const AITrailerAutomationPro = () => {
     return 'day'; // default
   };
 
-  const extractEnvironments = (text, subgenreStyle) => {
-    const environments = [];
+  const extractEnvironments = (text: string, subgenreStyle: Subgenre): Environment[] => {
+    const environments: Environment[] = [];
     
     // Look for ENVIRONMENTS section
     const envSection = text.match(/(?:# \*\*ENVIRONMENTS:\*\*|Environments:|ENVIRONMENTS:)(.*?)(?=# \*\*|Characters:|CHARACTERS:|Plot Beats|PLOT BEATS|$)/si);
@@ -410,8 +569,8 @@ const AITrailerAutomationPro = () => {
           
           if (location) {
             // Extract visual elements from description
-            const visualElements = [];
-            const elementKeywords = {
+            const visualElements: string[] = [];
+            const elementKeywords: Record<string, string[]> = {
               'dramatic lighting': ['darkness', 'dark', 'shadows'],
               'moody lighting': ['low light', 'dim'],
               'industrial textures': ['exposed brick', 'warehouse', 'industrial'],
@@ -471,8 +630,8 @@ const AITrailerAutomationPro = () => {
     return environments.slice(0, 10);
   };
 
-  const extractShots = (text) => {
-    const shots = [];
+  const extractShots = (text: string): Shot[] => {
+    const shots: Shot[] = [];
     
     // Look for SHOTLIST section
     const shotSection = text.match(/(?:# \*\*SHOTLIST.*?\*\*:|SHOTLIST|Shot List|SHOT LIST)(.*?)(?=# \*\*|$)/si);
@@ -550,8 +709,8 @@ const AITrailerAutomationPro = () => {
     return shots.slice(0, 20);
   };
 
-  const expandShotType = (shotType) => {
-    const shotTypeMap = {
+  const expandShotType = (shotType: string): string => {
+    const shotTypeMap: Record<string, string> = {
       'w': 'wide',
       'm': 'medium',
       'cu': 'close-up',
@@ -567,7 +726,7 @@ const AITrailerAutomationPro = () => {
     return shotTypeMap[shotType.toLowerCase()] || shotType.toLowerCase();
   };
 
-  const extractEmotionFromDescription = (description) => {
+  const extractEmotionFromDescription = (description: string): string => {
     const emotionKeywords = {
       'romantic': ['romantic', 'love', 'kiss', 'tender', 'intimate', 'mesmerized', 'struts'],
       'dramatic': ['dramatic', 'shocked', 'angry', 'tense', 'conflict', 'confrontation', 'furiously'],
@@ -588,7 +747,7 @@ const AITrailerAutomationPro = () => {
     return 'neutral';
   };
 
-  const extractCharactersFromShot = (description) => {
+  const extractCharactersFromShot = (description: string): string[] => {
     // Look for capitalized names
     const nameMatches = description.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
     
@@ -596,8 +755,8 @@ const AITrailerAutomationPro = () => {
     const dialogueMatches = description.match(/^([A-Z]+)\s*\n/gm) || [];
     dialogueMatches.forEach(match => {
       const name = match.trim();
-      if (name && !nameMatches.includes(name)) {
-        nameMatches.push(name);
+      if (name && !(nameMatches as string[]).includes(name)) {
+        (nameMatches as string[]).push(name);
       }
     });
     
@@ -607,11 +766,10 @@ const AITrailerAutomationPro = () => {
     );
   };
 
-  const generateCharacterPrompt = (character, subgenreStyle) => {
+  const generateCharacterPrompt = (character: Character, subgenreStyle: Subgenre): CharacterPrompt => {
     // Build a more detailed prompt using all available character info
     const rolePrefix = character.role ? `${character.role}, ` : '';
     const ageInfo = character.age ? `, ${character.age} years old` : '';
-    const wantInfo = character.want ? `, ${character.want}` : '';
     
     // Create variations based on character's emotional journey
     const emotionalVariations = [];
@@ -636,17 +794,17 @@ const AITrailerAutomationPro = () => {
         expressions: getSubgenreExpressions(selectedSubgenre),
         poses: getSubgenrePoses(selectedSubgenre)
       },
-      variations: emotionalVariations.slice(0, 4).map((variation, idx) => 
+      variations: emotionalVariations.slice(0, 4).map((variation) => 
         `${variation}, ${subgenreStyle.lightingStyle}, ${subgenreStyle.colorPalette}`
       )
     };
   };
 
-  const generateEnvironmentPrompt = (environment, subgenreStyle) => ({
+  const generateEnvironmentPrompt = (environment: Environment, subgenreStyle: Subgenre): EnvironmentPrompt => ({
     environment: environment.name,
     midjourneyPrompt: `photorealistic, cinematic, cinematographic environment reference, ${environment.name}, ${subgenreStyle.visualStyle}, ${subgenreStyle.colorPalette}, ${subgenreStyle.lightingStyle}, atmospheric, film quality, ultra detailed, 4K, ${environment.mood} --ar 16:9 --v 7.0 --style raw --personalize`,
     personalizedTags: `@${environment.name.replace(/\s+/g, '')}Environment`,
-    subgenreElements: getSubgenreEnvironmentElements(selectedSubgenre, environment.name),
+    subgenreElements: getSubgenreEnvironmentElements(selectedSubgenre),
     variations: [
       `${subgenreStyle.lightingStyle}, ${subgenreStyle.colorPalette}`,
       `dramatic shadows, ${subgenreStyle.visualStyle}`,
@@ -655,7 +813,7 @@ const AITrailerAutomationPro = () => {
     ]
   });
 
-  const generateShotPrompt = (shot, number, subgenreStyle) => {
+  const generateShotPrompt = (shot: Shot, number: number, subgenreStyle: Subgenre): ShotPrompt => {
     const characterDetails = shot.characters && shot.characters.length > 0 
       ? `featuring ${shot.characters.join(' and ')}, ` 
       : '';
@@ -688,7 +846,7 @@ const AITrailerAutomationPro = () => {
     };
   };
 
-  const generateVideoPrompt = (shot, number, subgenreStyle) => {
+  const generateVideoPrompt = (shot: Shot, number: number, subgenreStyle: Subgenre): VideoPrompt => {
     const characterDetails = shot.characters && shot.characters.length > 0 
       ? `${shot.characters.join(' and ')} in the scene, ` 
       : '';
@@ -721,8 +879,8 @@ const AITrailerAutomationPro = () => {
     };
   };
 
-  const generateRunwayReferences = (characters, environments, subgenreStyle) => {
-    const references = [];
+  const generateRunwayReferences = (characters: Character[], environments: Environment[], subgenreStyle: Subgenre): RunwayReference[] => {
+    const references: RunwayReference[] = [];
     
     characters.forEach(char => {
       references.push({
@@ -748,7 +906,7 @@ const AITrailerAutomationPro = () => {
     return references;
   };
 
-  const generateFolderStructure = (projectName) => {
+  const generateFolderStructure = (projectName: string): FolderStructure => {
     const sanitizedName = projectName.replace(/[^a-zA-Z0-9]/g, '_');
     return {
       mainFolder: `01_${sanitizedName}`,
@@ -786,7 +944,7 @@ const AITrailerAutomationPro = () => {
     };
   };
 
-  const generateNotionTemplate = (projectName, characters, environments) => {
+  const generateNotionTemplate = (projectName: string, characters: Character[], environments: Environment[]): NotionTemplate => {
     return {
       title: `${projectName} - AI Trailer Production`,
       properties: {
@@ -877,8 +1035,8 @@ const AITrailerAutomationPro = () => {
   };
 
   // Helper functions for subgenre-specific content
-  const getSubgenreOutfits = (subgenre) => {
-    const outfitMap = {
+  const getSubgenreOutfits = (subgenre: string): string[] => {
+    const outfitMap: Record<string, string[]> = {
       contemporary: ['casual chic', 'business attire', 'date night outfit', 'workout clothes'],
       historical: ['period dress', 'formal gown', 'riding habit', 'ball gown'],
       fantasy: ['mystical robes', 'warrior attire', 'enchanted dress', 'royal garments'],
@@ -889,8 +1047,8 @@ const AITrailerAutomationPro = () => {
     return outfitMap[subgenre] || outfitMap.contemporary;
   };
 
-  const getSubgenreExpressions = (subgenre) => {
-    const expressionMap = {
+  const getSubgenreExpressions = (subgenre: string): string[] => {
+    const expressionMap: Record<string, string[]> = {
       contemporary: ['genuine smile', 'thoughtful', 'confident', 'vulnerable'],
       historical: ['demure', 'passionate', 'defiant', 'longing'],
       fantasy: ['mystical', 'powerful', 'enchanted', 'otherworldly'],
@@ -901,8 +1059,8 @@ const AITrailerAutomationPro = () => {
     return expressionMap[subgenre] || expressionMap.contemporary;
   };
 
-  const getSubgenrePoses = (subgenre) => {
-    const poseMap = {
+  const getSubgenrePoses = (subgenre: string): string[] => {
+    const poseMap: Record<string, string[]> = {
       contemporary: ['natural standing', 'casual lean', 'walking', 'sitting relaxed'],
       historical: ['formal portrait', 'curtsy', 'elegant pose', 'dancing position'],
       fantasy: ['magical gesture', 'powerful stance', 'ethereal pose', 'mystical'],
@@ -913,8 +1071,8 @@ const AITrailerAutomationPro = () => {
     return poseMap[subgenre] || poseMap.contemporary;
   };
 
-  const getSubgenreEnvironmentElements = (subgenre, environmentName) => {
-    const elementMap = {
+  const getSubgenreEnvironmentElements = (subgenre: string): string[] => {
+    const elementMap: Record<string, string[]> = {
       contemporary: ['modern furniture', 'urban backdrop', 'contemporary art', 'sleek design'],
       historical: ['period furniture', 'vintage decor', 'classical architecture', 'antique elements'],
       fantasy: ['magical elements', 'mystical lighting', 'enchanted objects', 'supernatural atmosphere'],
@@ -925,8 +1083,8 @@ const AITrailerAutomationPro = () => {
     return elementMap[subgenre] || elementMap.contemporary;
   };
 
-  const getSubgenreEnvironmentVariations = (subgenre) => {
-    const variationMap = {
+  const getSubgenreEnvironmentVariations = (subgenre: string): string[] => {
+    const variationMap: Record<string, string[]> = {
       contemporary: ['day time natural', 'evening city lights', 'golden hour', 'modern lighting'],
       historical: ['candlelight', 'fireplace glow', 'period appropriate', 'classical lighting'],
       fantasy: ['magical glow', 'mystical atmosphere', 'enchanted lighting', 'supernatural'],
@@ -937,8 +1095,8 @@ const AITrailerAutomationPro = () => {
     return variationMap[subgenre] || variationMap.contemporary;
   };
 
-  const getSubgenrePresets = (subgenre) => {
-    const presetMap = {
+  const getSubgenrePresets = (subgenre: string): string[] => {
+    const presetMap: Record<string, string[]> = {
       contemporary: ['Handheld', 'Natural', 'Realistic'],
       historical: ['Classical', 'Dramatic', 'Period'],
       fantasy: ['Mystical', 'Ethereal', 'Magical'],
@@ -949,8 +1107,8 @@ const AITrailerAutomationPro = () => {
     return presetMap[subgenre] || presetMap.contemporary;
   };
 
-  const getSubgenreVideoNotes = (subgenre) => {
-    const noteMap = {
+  const getSubgenreVideoNotes = (subgenre: string): string => {
+    const noteMap: Record<string, string> = {
       contemporary: 'Focus on natural, realistic movements and modern pacing',
       historical: 'Emphasize period-appropriate movements and classical cinematography',
       fantasy: 'Include mystical elements and otherworldly atmosphere',
@@ -961,23 +1119,26 @@ const AITrailerAutomationPro = () => {
     return noteMap[subgenre] || noteMap.contemporary;
   };
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setScript(e.target.result);
+        const result = e.target?.result;
+        if (typeof result === 'string') {
+          setScript(result);
+        }
       };
       reader.readAsText(file);
     }
   };
 
-  const copyToClipboard = (text, index) => {
+  const copyToClipboard = (text: string, index: number) => {
     try {
       navigator.clipboard.writeText(text).then(() => {
         setCopiedIndex(index);
         setTimeout(() => setCopiedIndex(-1), 2000);
-      }).catch(err => {
+      }).catch((err: Error) => {
         console.error('Failed to copy:', err);
         // Fallback for older browsers
         const textArea = document.createElement('textarea');
@@ -990,12 +1151,12 @@ const AITrailerAutomationPro = () => {
           document.execCommand('copy');
           setCopiedIndex(index);
           setTimeout(() => setCopiedIndex(-1), 2000);
-        } catch (err) {
+        } catch {
           alert('Copy failed. Please select and copy manually.');
         }
         document.body.removeChild(textArea);
       });
-    } catch (err) {
+    } catch {
       alert('Copy failed. Please select and copy manually.');
     }
   };
@@ -1071,7 +1232,7 @@ const AITrailerAutomationPro = () => {
     downloadTextFile(exportText, filename);
   };
 
-  const downloadTextFile = (content, filename) => {
+  const downloadTextFile = (content: string, filename: string) => {
     try {
       // Method 1: Using Blob and createObjectURL
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -1224,7 +1385,7 @@ const AITrailerAutomationPro = () => {
                 />
                 <Upload className="mx-auto mb-2 text-gray-400" size={32} />
                 <button
-                  onClick={() => fileInputRef.current.click()}
+                  onClick={() => fileInputRef.current?.click()}
                   className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
                 >
                   Upload Script
@@ -1299,15 +1460,15 @@ Description of what happens...
                 <>
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-blue-800 mb-2">Visual Style</h4>
-                    <p className="text-blue-700 text-sm">{subgenres.find(s => s.id === selectedSubgenre).visualStyle}</p>
+                    <p className="text-blue-700 text-sm">{subgenres.find(s => s.id === selectedSubgenre)?.visualStyle}</p>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-green-800 mb-2">Color Palette</h4>
-                    <p className="text-green-700 text-sm">{subgenres.find(s => s.id === selectedSubgenre).colorPalette}</p>
+                    <p className="text-green-700 text-sm">{subgenres.find(s => s.id === selectedSubgenre)?.colorPalette}</p>
                   </div>
                   <div className="bg-yellow-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-yellow-800 mb-2">Lighting Style</h4>
-                    <p className="text-yellow-700 text-sm">{subgenres.find(s => s.id === selectedSubgenre).lightingStyle}</p>
+                    <p className="text-yellow-700 text-sm">{subgenres.find(s => s.id === selectedSubgenre)?.lightingStyle}</p>
                   </div>
                 </>
               )}
@@ -1823,7 +1984,7 @@ Description of what happens...
                       </div>
                     </div>
                     
-                    {ref.type === 'character' && (
+                    {ref.type === 'character' && ref.extraOutfits && (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
                           <h4 className="font-medium text-gray-700 mb-2">Subgenre-Specific Outfits:</h4>
@@ -1836,7 +1997,7 @@ Description of what happens...
                         <div>
                           <h4 className="font-medium text-gray-700 mb-2">Expressions:</h4>
                           <ul className="text-sm text-gray-600">
-                            {ref.expressions.map((expr, idx) => (
+                            {ref.expressions?.map((expr, idx) => (
                               <li key={idx}>• {expr}</li>
                             ))}
                           </ul>
@@ -1844,12 +2005,12 @@ Description of what happens...
                       </div>
                     )}
                     
-                    {ref.type === 'environment' && (
+                    {ref.type === 'environment' && ref.variations && (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
                           <h4 className="font-medium text-gray-700 mb-2">Environmental Variations:</h4>
                           <ul className="text-sm text-gray-600">
-                            {ref.variations.map((variation, idx) => (
+                            {ref.variations?.map((variation, idx) => (
                               <li key={idx}>• {variation}</li>
                             ))}
                           </ul>
@@ -1857,7 +2018,7 @@ Description of what happens...
                         <div>
                           <h4 className="font-medium text-gray-700 mb-2">Subgenre Elements:</h4>
                           <ul className="text-sm text-gray-600">
-                            {ref.subgenreElements.map((element, idx) => (
+                            {ref.subgenreElements?.map((element, idx) => (
                               <li key={idx}>• {element}</li>
                             ))}
                           </ul>
